@@ -8,20 +8,35 @@ import java.nio.charset.StandardCharsets;
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     public static void main(String[] args) throws IOException {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
+
         System.out.println("Hello and welcome!");
         InetAddress address = InetAddress.getByName("localhost");
-        DatagramSocket socket = new DatagramSocket();
-        String msg = "What time is it now ?";
-        byte[] messageArray = msg.getBytes();
-        DatagramPacket packet = new DatagramPacket(messageArray,messageArray.length,address,9999);
-        socket.send(packet);
-        byte[] buffer = new byte[1024];
-        DatagramPacket response = new DatagramPacket(buffer,buffer.length);
-        socket.receive(response);
-        String message = new String(response.getData(), 0, response.getLength(), StandardCharsets.UTF_8);
-
-        System.out.println(message);
+        final int port = 9999;
+        final int timeout = 5000;
+        try(DatagramSocket socket = new DatagramSocket()){
+            String msg = "What time is it now ?";
+            byte[] messageArray = msg.getBytes();
+            socket.setSoTimeout(timeout); // 5 second timeout
+            DatagramPacket packet = new DatagramPacket(messageArray,messageArray.length,address,port);
+            try{
+                socket.send(packet);
+            }catch (IOException e){
+                System.err.println("Send error : " + e.getMessage());
+            }
+            byte[] buffer = new byte[1024];
+            DatagramPacket response = new DatagramPacket(buffer,buffer.length);
+            try {
+            socket.receive(response);
+            String message = new String(response.getData(), 0, response.getLength(), StandardCharsets.UTF_8);
+            System.out.println(message);
+            }catch (SocketTimeoutException e){
+                System.err.println("Timeout error : " + e.getMessage());
+            }
+            catch (IOException e){
+                System.err.println("Receive error : " + e.getMessage());
+            }
+        } catch (SocketException e){
+            System.err.println("Socket error : "  +  e.getMessage());
+        }
     }
 }
